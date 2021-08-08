@@ -1,4 +1,4 @@
 # Olik-NG
 
-These are the framework-bindings for [Olik](https://github.com/Memeplexx/Olik).  
+This repository contains Angular bindings for [Olik](https://github.com/Memeplexx/Olik).  
 Please post all issues there.
