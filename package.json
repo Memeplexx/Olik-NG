@@ -18,9 +18,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@angular/core": "~10.2.0",
-    "olik": "0.0.42",
-    "rxjs": "~6.5.4"
+    "olik": "0.0.42"
+  },
+  "peerDependencies": {
+    "rxjs": "~6.5.4",
+    "@angular/core": "~10.2.0"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^5.11.10",
