@@ -1,5 +1,5 @@
 import { EventEmitter, NgModule, NgZone } from '@angular/core';
-import * as core from 'olik';
+import { augment, DeepReadonlyArray, Derivation, FindOrFilter, FutureState, listenToDevtoolsDispatch, StoreOrDerivation, Trackability } from 'olik';
 import { combineLatest, from, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -9,11 +9,11 @@ declare module 'olik' {
   interface StoreOrDerivation<C> {
     observe: () => Observable<C>;
   }
-  interface ArrayOfElementsCommonAction<X extends core.DeepReadonlyArray<any>, F extends core.FindOrFilter, T extends core.Trackability> {
+  interface ArrayOfElementsCommonAction<X extends DeepReadonlyArray<any>, F extends FindOrFilter, T extends Trackability> {
     observe: () => Observable<F extends 'find' ? X[0] : X>;
   }
   interface Future<C> {
-    observeStatus: () => Observable<core.FutureState<C>>;
+    observeStatus: () => Observable<FutureState<C>>;
     asObservable: () => Observable<C>;
   }
   interface Async<C> extends Observable<C> {
@@ -77,11 +77,11 @@ type Observables<T> = ClassObservables<SubType<Omit<T, 'observables$'>, Observab
 export class OlikNgModule {
   constructor(ngZone: NgZone) {
     if (ngZone) {
-      core.listenToDevtoolsDispatch(() => ngZone.run(() => null));
+      listenToDevtoolsDispatch(() => ngZone.run(() => null));
     }
-    core.augment({
+    augment({
       selection: {
-        observe: <C>(selection: core.StoreOrDerivation<C>) => () => new Observable<any>(observer => {
+        observe: <C>(selection: StoreOrDerivation<C>) => () => new Observable<any>(observer => {
           observer.next(selection.read());
           const subscription = selection.onChange(v => observer.next(v));
           return () => subscription.unsubscribe();
@@ -96,7 +96,7 @@ export class OlikNgModule {
         asObservable: (future) => () => from(future.asPromise())
       },
       derivation: {
-        observe: <R>(selection: core.Derivation<R>) => () => new Observable<any>(observer => {
+        observe: <R>(selection: Derivation<R>) => () => new Observable<any>(observer => {
           observer.next(selection.read());
           const subscription = selection.onChange(v => observer.next(v));
           return () => subscription.unsubscribe();

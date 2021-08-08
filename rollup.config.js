@@ -23,7 +23,11 @@ export default {
       name: 'olik-ng', // the global which can be used in a browser
     }
   ].map(e => ({
-    ...e, sourcemap: true
+    ...e, sourcemap: true, globals: {
+      'rxjs': 'rxjs',
+      'rxjs/operators': 'rxjs/operators',
+      '@angular/core': '@angular/core'
+    }
   })),
   plugins: [
     resolve(),
