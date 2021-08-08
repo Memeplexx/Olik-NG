@@ -3,3 +3,4 @@ node_js:
   - "10"
 install:
   - yarn
+after_success: "sbt coveralls"
