@@ -13,7 +13,7 @@ declare module 'olik' {
     observe: () => Observable<F extends 'find' ? X[0] : X>;
   }
   interface Future<C> {
-    observeStatus: () => Observable<FutureState<C>>;
+    asObservableFuture: () => Observable<FutureState<C>>;
     asObservable: () => Observable<C>;
   }
   interface Async<C> extends Observable<C> {
@@ -88,7 +88,7 @@ export class OlikNgModule {
         }),
       },
       future: {
-        observeStatus: (future) => () => new Observable<any>(observer => {
+        asObservableFuture: (future) => () => new Observable<any>(observer => {
           observer.next({ error: null, isLoading: false, storeValue: future.read(), wasRejected: false, wasResolved: false });
           const subscription = future.onChange(v => observer.next(v));
           return () => subscription.unsubscribe();

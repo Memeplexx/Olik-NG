@@ -1,6 +1,6 @@
 {
   "name": "olik-ng",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "",
   "main": "dist/index.js",
   "module": "dist/index.es.js",
@@ -18,7 +18,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "olik": "0.0.42"
+    "olik": "0.0.44"
   },
   "peerDependencies": {
     "rxjs": "~6.5.4",
