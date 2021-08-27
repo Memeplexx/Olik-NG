@@ -22,14 +22,14 @@ describe('Angular', () => {
   })
 
   it('should create and update a store', () => {
-    const select = createApplicationStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     select(s => s.object.property)
       .replace('test');
     expect(select().read().object.property).toEqual('test');
   })
 
   it('should be able to observe state updates', done => {
-    const select = createApplicationStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     const obs$ = select(s => s.object.property).observe();
     const payload = 'test';
     obs$.pipe(skip(1)).subscribe(val => {
@@ -40,7 +40,7 @@ describe('Angular', () => {
   })
 
   it('should be able to observe the status of a resolved fetch', done => {
-    const select = createApplicationStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     let count = 0;
     const fetchProperty = () => from(new Promise<string>(resolve => setTimeout(() => resolve('val ' + count), 10)));
     select(s => s.object.property)
@@ -65,7 +65,7 @@ describe('Angular', () => {
   })
 
   it('should be able to observe the status of a rejected fetch', done => {
-    const select = createApplicationStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     let count = 0;
     const fetchAndReject = () => new Promise<string>((resolve, reject) => setTimeout(() => reject('test'), 10));
     select(s => s.object.property)
@@ -90,7 +90,7 @@ describe('Angular', () => {
   })
 
   it('should be able to observe a resolved fetch', done => {
-    const select = createApplicationStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     const payload = 'val';
     const fetchProperty = () => from(new Promise<string>(resolve => setTimeout(() => resolve(payload), 10)));
     select(s => s.object.property)
@@ -103,7 +103,7 @@ describe('Angular', () => {
   })
 
   it('should be able to observe a rejected fetch', done => {
-    const select = createApplicationStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     const payload = 'val';
     const fetchProperty = () => from(new Promise<string>((resolve, reject) => setTimeout(() => reject(payload), 10)));
     select(s => s.object.property)
@@ -118,7 +118,7 @@ describe('Angular', () => {
   })
 
   it('should observe a derivation', done => {
-    const select = createApplicationStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     deriveFrom(
       select(s => s.object.property),
       select(s => s.string)
@@ -131,7 +131,7 @@ describe('Angular', () => {
   })
 
   it('should observe a nested store update', done => {
-    const select = createApplicationStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     const nested = createComponentStore({ hello: 'abc' }, { componentName: 'component', instanceName: 'instance' });
     nested(s => s.hello)
       .observe()
@@ -141,7 +141,7 @@ describe('Angular', () => {
   })
 
   it('should combineObservers', done => {
-    const select = createApplicationStore(initialState, { devtools: false });
+    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
     let count = 0;
     class MyClass {
       obs1$ = select(s => s.object.property).observe();
