@@ -4,10 +4,9 @@ import { catchError, skip } from 'rxjs/operators';
 import {
   createComponentStore,
   deriveFrom,
-  OlikNgModule,
   combineComponentObservables,
   createApplicationStore,
-} from '../src/core';
+} from '../src/lib/olik-ng.module';
 
 describe('Angular', () => {
 
@@ -17,19 +16,15 @@ describe('Angular', () => {
     string: 'b',
   };
 
-  beforeEach(() => {
-    new OlikNgModule(null as any);
-  })
-
   it('should create and update a store', () => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     select(s => s.object.property)
       .replace('test');
     expect(select().read().object.property).toEqual('test');
   })
 
   it('should be able to observe state updates', done => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     const obs$ = select(s => s.object.property).observe();
     const payload = 'test';
     obs$.pipe(skip(1)).subscribe(val => {
@@ -40,7 +35,7 @@ describe('Angular', () => {
   })
 
   it('should be able to observe the status of a resolved fetch', done => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     let count = 0;
     const fetchProperty = () => from(new Promise<string>(resolve => setTimeout(() => resolve('val ' + count), 10)));
     select(s => s.object.property)
@@ -48,24 +43,25 @@ describe('Angular', () => {
       .asObservableFuture()
       .subscribe(val => {
         count++;
-        if (count === 2) {
+        if (count === 1) {
           expect(val.isLoading).toEqual(true);
           expect(val.wasRejected).toEqual(false);
           expect(val.wasResolved).toEqual(false);
           expect(val.error).toEqual(null);
-        } else if (count === 3) {
+          expect(val.storeValue).toEqual(initialState.object.property);
+        } else if (count === 2) {
           expect(val.isLoading).toEqual(false);
           expect(val.wasRejected).toEqual(false);
           expect(val.wasResolved).toEqual(true);
           expect(val.error).toEqual(null);
-          expect(val.storeValue).toEqual('val 2');
+          expect(val.storeValue).toEqual('val 1');
           done();
         }
       });
   })
 
   it('should be able to observe the status of a rejected fetch', done => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     let count = 0;
     const fetchAndReject = () => new Promise<string>((resolve, reject) => setTimeout(() => reject('test'), 10));
     select(s => s.object.property)
@@ -73,12 +69,12 @@ describe('Angular', () => {
       .asObservableFuture()
       .subscribe(val => {
         count++;
-        if (count === 2) {
+        if (count === 1) {
           expect(val.isLoading).toEqual(true);
           expect(val.wasRejected).toEqual(false);
           expect(val.wasResolved).toEqual(false);
           expect(val.error).toEqual(null);
-        } else if (count === 3) {
+        } else if (count === 2) {
           expect(val.isLoading).toEqual(false);
           expect(val.wasRejected).toEqual(true);
           expect(val.wasResolved).toEqual(false);
@@ -90,7 +86,7 @@ describe('Angular', () => {
   })
 
   it('should be able to observe a resolved fetch', done => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     const payload = 'val';
     const fetchProperty = () => from(new Promise<string>(resolve => setTimeout(() => resolve(payload), 10)));
     select(s => s.object.property)
@@ -103,7 +99,7 @@ describe('Angular', () => {
   })
 
   it('should be able to observe a rejected fetch', done => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     const payload = 'val';
     const fetchProperty = () => from(new Promise<string>((resolve, reject) => setTimeout(() => reject(payload), 10)));
     select(s => s.object.property)
@@ -118,7 +114,7 @@ describe('Angular', () => {
   })
 
   it('should observe a derivation', done => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     deriveFrom(
       select(s => s.object.property),
       select(s => s.string)
@@ -131,7 +127,7 @@ describe('Angular', () => {
   })
 
   it('should observe a nested store update', done => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     const nested = createComponentStore({ hello: 'abc' }, { componentName: 'component', instanceName: 'instance' });
     nested(s => s.hello)
       .observe()
@@ -141,7 +137,7 @@ describe('Angular', () => {
   })
 
   it('should combineObservers', done => {
-    const select = createApplicationStore(initialState, { devtoolsEnabled: false, replaceExistingStoreIfItExists: true });
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
     let count = 0;
     class MyClass {
       obs1$ = select(s => s.object.property).observe();
