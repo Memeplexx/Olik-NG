@@ -1,4 +1,4 @@
-import { EventEmitter, NgZone } from '@angular/core';
+import { EventEmitter, NgModule, NgZone } from '@angular/core';
 import { combineLatest, from, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -15,8 +15,6 @@ export const createComponentStore: typeof core['createComponentStore'] = (state,
   augementCore();
   return core.createComponentStore(state, options);
 }
-
-export const syncNgZoneWithDevtools = (ngZone: NgZone) => core.listenToDevtoolsDispatch(() => ngZone.run(() => null));
 
 declare module 'olik' {
   interface StoreOrDerivation<C> {
@@ -133,4 +131,11 @@ const augementCore = () => {
       return promiseOrObservable.then ? promiseOrObservable : (promiseOrObservable as Observable<C>).toPromise()
     },
   })
+}
+
+@NgModule()
+export class OlikNgModule {
+  constructor(ngZone: NgZone) {
+    core.listenToDevtoolsDispatch(() => ngZone.run(() => null));
+  }
 }
