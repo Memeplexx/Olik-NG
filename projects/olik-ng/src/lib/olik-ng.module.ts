@@ -1,8 +1,7 @@
-import { EventEmitter, NgModule, NgZone } from '@angular/core';
+import { EventEmitter, NgZone } from '@angular/core';
+import * as core from 'olik';
 import { combineLatest, from, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-
-import * as core from 'olik';
 
 export * from 'olik';
 
@@ -15,6 +14,8 @@ export const createComponentStore: typeof core['createComponentStore'] = (state,
   augementCore();
   return core.createComponentStore(state, options);
 }
+
+export const syncNgZoneWithDevtools = (ngZone: NgZone) => core.listenToDevtoolsDispatch(() => ngZone.run(() => null));
 
 declare module 'olik' {
   interface StoreOrDerivation<C> {
@@ -100,7 +101,7 @@ const augementCore = () => {
       observe: <C>(selection: core.StoreOrDerivation<C>) => () => new Observable<any>(observer => {
         observer.next(selection.read());
         const subscription = selection.onChange(v => observer.next(v));
-        return () => subscription.unsubscribe();
+        return () => { subscription.unsubscribe(); observer.complete(); }
       }),
     },
     future: {
@@ -113,9 +114,9 @@ const augementCore = () => {
         // Invoke then() on promise
         let running = true;
         promise
-          .then(() => { if (running) { observer.next(input.getFutureState()); } })
-          .catch(() => { if (running) { observer.next(input.getFutureState()); } });
-        return () => { running = false; }
+          .then(() => { if (running) { observer.next(input.getFutureState()); observer.complete(); } })
+          .catch(() => { if (running) { observer.next(input.getFutureState()); observer.complete(); } });
+        return () => { running = false; observer.complete(); }
       }),
       asObservable: (future) => () => from(future.asPromise())
     },
@@ -123,7 +124,7 @@ const augementCore = () => {
       observe: <R>(selection: core.Derivation<R>) => () => new Observable<any>(observer => {
         observer.next(selection.read());
         const subscription = selection.onChange(v => observer.next(v));
-        return () => subscription.unsubscribe();
+        return () => { subscription.unsubscribe(); observer.complete(); }
       }),
     },
     async: <C>(fnReturningFutureAugmentation: () => any) => {
@@ -131,11 +132,4 @@ const augementCore = () => {
       return promiseOrObservable.then ? promiseOrObservable : (promiseOrObservable as Observable<C>).toPromise()
     },
   })
-}
-
-@NgModule()
-export class OlikNgModule {
-  constructor(ngZone: NgZone) {
-    core.listenToDevtoolsDispatch(() => ngZone.run(() => null));
-  }
 }

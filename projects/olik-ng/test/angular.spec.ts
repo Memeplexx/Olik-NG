@@ -1,5 +1,5 @@
-import { from, of } from 'rxjs';
-import { catchError, skip } from 'rxjs/operators';
+import { BehaviorSubject, from, of } from 'rxjs';
+import { catchError, concatMap, skip, tap } from 'rxjs/operators';
 
 import {
   createComponentStore,
@@ -144,7 +144,7 @@ describe('Angular', () => {
       obs2$ = select(s => s.string).observe();
       observables$ = combineComponentObservables<MyClass>(this);
       constructor() {
-        this.observables$ .subscribe(e => {
+        this.observables$.subscribe(e => {
           count++;
           if (count === 1) {
             const expectation = { obs1$: 'a', obs2$: 'b' };
@@ -161,6 +161,35 @@ describe('Angular', () => {
       }
     };
     new MyClass();
+  })
+
+  it('should be able to paginate', done => {
+    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
+    const page$ = new BehaviorSubject(0);
+    const idle$ = new BehaviorSubject(false);
+    const items = Array(100).fill(null).map((e, i) => ({ id: i, value: `value ${i}` }));
+    const fetchItems = (page: number) => () => new Promise<{ id: number, value: string }[]>(
+      resolve => setTimeout(() => resolve(items.slice(page * 10, (page * 10) + 10)), 500));
+    select(s => s.array).removeAll();
+    const sub = page$.pipe(
+      concatMap(page => select(s => s.array)
+        .replaceAll(fetchItems(page))
+        .asObservableFuture()),
+      tap(r => {
+        if (r.wasResolved) {
+          expect(r.storeValue).toEqual(items.slice(page$.value * 10, (page$.value * 10) + 10))
+          idle$.next(!idle$.value);
+          if (page$.value === 5) {
+            sub.unsubscribe();
+            done();
+          }
+        }
+      })
+    ).subscribe();
+    idle$.pipe(
+      skip(1),
+      tap(() => page$.next(page$.value + 1))
+    ).subscribe();
   })
 
 
