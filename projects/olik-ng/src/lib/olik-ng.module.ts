@@ -108,17 +108,19 @@ const augementCore = () => {
       asObservableFuture: (input) => () => new Observable<any>(observer => {
 
         // Call promise, and update state because there may have been an optimistic update
-        const promise = input.asPromise();
+        // const promise = input.asPromise();
         observer.next(input.getFutureState());
 
         // Invoke then() on promise
         let running = true;
-        promise
+        input
           .then(() => { if (running) { observer.next(input.getFutureState()); observer.complete(); } })
           .catch(() => { if (running) { observer.next(input.getFutureState()); observer.complete(); } });
         return () => { running = false; observer.complete(); }
       }),
-      asObservable: (future) => () => from(future.asPromise())
+      asObservable: (input) => () => {
+        return from(Promise.resolve(input));
+      }
     },
     derivation: {
       observe: <R>(selection: core.Derivation<R>) => () => new Observable<any>(observer => {
