@@ -27,7 +27,9 @@ describe('Angular', () => {
     const select = createStore({ name: '', state: initialState });
     const obs$ = select.object.property.observe();
     const payload = 'test';
-    obs$.pipe(skip(1)).subscribe(val => {
+    obs$.pipe(
+      skip(1)
+    ).subscribe(val => {
       expect(val).toEqual(payload);
       done();
     });

@@ -4,7 +4,7 @@
   "peerDependencies": {
     "@angular/common": "^10.0.0",
     "@angular/core": "^10.0.0",
-    "olik": "^0.1.4",
+    "olik": "^0.1.7",
     "rxjs": "~6.6.0"
   },
   "dependencies": {

@@ -5,7 +5,7 @@ import { map } from 'rxjs/operators';
 
 export * from 'olik';
 
-// export const syncNgZoneWithDevtools = (ngZone: NgZone) => core.listenToDevtoolsDispatch(() => ngZone.run(() => null));
+export const syncNgZoneWithDevtools = (ngZone: NgZone) => core.listenToDevtoolsDispatch(() => ngZone.run(() => null));
 
 declare module 'olik' {
   interface Readable<S> {
