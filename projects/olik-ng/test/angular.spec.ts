@@ -2,10 +2,10 @@ import { BehaviorSubject, from, of } from 'rxjs';
 import { catchError, concatMap, skip, tap } from 'rxjs/operators';
 
 import {
-  createComponentStore,
-  deriveFrom,
   combineComponentObservables,
-  createApplicationStore,
+  createStore,
+  derive,
+  nestStoreIfPossible,
 } from '../src/lib/olik-ng.module';
 
 describe('Angular', () => {
@@ -17,28 +17,28 @@ describe('Angular', () => {
   };
 
   it('should create and update a store', () => {
-    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
-    select(s => s.object.property)
+    const select = createStore({ name: '', state: initialState });
+    select.object.property
       .replace('test');
-    expect(select().read().object.property).toEqual('test');
+    expect(select.state.object.property).toEqual('test');
   })
 
   it('should be able to observe state updates', done => {
-    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
-    const obs$ = select(s => s.object.property).observe();
+    const select = createStore({ name: '', state: initialState });
+    const obs$ = select.object.property.observe();
     const payload = 'test';
     obs$.pipe(skip(1)).subscribe(val => {
       expect(val).toEqual(payload);
       done();
     });
-    select(s => s.object.property).replace(payload);
+    select.object.property.replace(payload);
   })
 
   it('should be able to observe the status of a resolved fetch', done => {
-    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
+    const select = createStore({ name: '', state: initialState });
     let count = 0;
     const fetchProperty = () => from(new Promise<string>(resolve => setTimeout(() => resolve('val ' + count), 10)));
-    select(s => s.object.property)
+    select.object.property
       .replace(fetchProperty)
       .asObservableFuture()
       .subscribe(val => {
@@ -61,10 +61,10 @@ describe('Angular', () => {
   })
 
   it('should be able to observe the status of a rejected fetch', done => {
-    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
+    const select = createStore({ name: '', state: initialState });
     let count = 0;
     const fetchAndReject = () => new Promise<string>((resolve, reject) => setTimeout(() => reject('test'), 10));
-    select(s => s.object.property)
+    select.object.property
       .replace(fetchAndReject)
       .asObservableFuture()
       .subscribe(val => {
@@ -86,10 +86,10 @@ describe('Angular', () => {
   })
 
   it('should be able to observe a resolved fetch', done => {
-    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
+    const select = createStore({ name: '', state: initialState });
     const payload = 'val';
     const fetchProperty = () => from(new Promise<string>(resolve => setTimeout(() => resolve(payload), 10)));
-    select(s => s.object.property)
+    select.object.property
       .replace(fetchProperty)
       .asObservable()
       .subscribe(val => {
@@ -99,10 +99,10 @@ describe('Angular', () => {
   })
 
   it('should be able to observe a rejected fetch', done => {
-    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
+    const select = createStore({ name: '', state: initialState });
     const payload = 'val';
     const fetchProperty = () => from(new Promise<string>((resolve, reject) => setTimeout(() => reject(payload), 10)));
-    select(s => s.object.property)
+    select.object.property
       .replace(fetchProperty)
       .asObservable().pipe(
         catchError(e => of('error: ' + e))
@@ -114,11 +114,11 @@ describe('Angular', () => {
   })
 
   it('should observe a derivation', done => {
-    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
-    deriveFrom(
-      select(s => s.object.property),
-      select(s => s.string)
-    ).usingExpensiveCalc((a, b) => a + b)
+    const select = createStore({ name: '', state: initialState });
+    derive(
+      select.object.property,
+      select.string,
+    ).with((a, b) => a + b)
       .observe()
       .subscribe(val => {
         expect(val).toEqual('ab');
@@ -127,9 +127,10 @@ describe('Angular', () => {
   })
 
   it('should observe a nested store update', done => {
-    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
-    const nested = createComponentStore({ hello: 'abc' }, { componentName: 'component', instanceName: 'instance' });
-    nested(s => s.hello)
+    const select = createStore({ name: 'x', state: initialState });
+    const nested = createStore({  state: { hello: 'abc' }, name: 'component' });
+    nestStoreIfPossible({ store: nested, instanceName: 'instance', containerStoreName: 'x' })
+    nested.hello
       .observe()
       .subscribe(e => {
         done();
@@ -137,11 +138,11 @@ describe('Angular', () => {
   })
 
   it('should combineObservers', done => {
-    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
+    const select = createStore({ name: '', state: initialState });
     let count = 0;
     class MyClass {
-      obs1$ = select(s => s.object.property).observe();
-      obs2$ = select(s => s.string).observe();
+      obs1$ = select.object.property.observe();
+      obs2$ = select.string.observe();
       observables$ = combineComponentObservables<MyClass>(this);
       constructor() {
         this.observables$.subscribe(e => {
@@ -157,22 +158,22 @@ describe('Angular', () => {
             done();
           }
         });
-        select(s => s.object.property).replace('b');
+        select.object.property.replace('b');
       }
     };
     new MyClass();
   })
 
   it('should be able to paginate', done => {
-    const select = createApplicationStore(initialState, { replaceExistingStoreIfItExists: true });
+    const select = createStore({ name: '', state: initialState });
     const page$ = new BehaviorSubject(0);
     const idle$ = new BehaviorSubject(false);
     const items = Array(100).fill(null).map((e, i) => ({ id: i, value: `value ${i}` }));
     const fetchItems = (page: number) => () => new Promise<{ id: number, value: string }[]>(
       resolve => setTimeout(() => resolve(items.slice(page * 10, (page * 10) + 10)), 500));
-    select(s => s.array).removeAll();
+    select.array.removeAll();
     const sub = page$.pipe(
-      concatMap(page => select(s => s.array)
+      concatMap(page => select.array
         .replaceAll(fetchItems(page))
         .asObservableFuture()),
       tap(r => {

@@ -5,40 +5,20 @@ import { map } from 'rxjs/operators';
 
 export * from 'olik';
 
-export const createApplicationStore: typeof core['createApplicationStore'] = (state, options) => {
-  augementCore();
-  return core.createApplicationStore(state, options);
-}
-
-export const createComponentStore: typeof core['createComponentStore'] = (state, options) => {
-  augementCore();
-  return core.createComponentStore(state, options);
-}
-
-export const syncNgZoneWithDevtools = (ngZone: NgZone) => core.listenToDevtoolsDispatch(() => ngZone.run(() => null));
+// export const syncNgZoneWithDevtools = (ngZone: NgZone) => core.listenToDevtoolsDispatch(() => ngZone.run(() => null));
 
 declare module 'olik' {
-  interface StoreOrDerivation<C> {
-    /**
-     * Returns an Observable to track updates to the selected node of the state tree
-     * @example
-     * select(s => s.todos)
-     *   .observe()
-     *   .subscribe(todos => console.log(todos)); 
-     */
-    observe: () => Observable<C>;
-  }
-  interface ArrayOfElementsCommonAction<X extends core.DeepReadonlyArray<any>, F extends core.FindOrFilter, T extends core.Trackability> {
-    observe: () => Observable<F extends 'find' ? X[0] : X>;
-  }
-  interface Future<C> {
-    asObservableFuture: () => Observable<core.FutureState<C>>;
-    asObservable: () => Observable<C>;
-  }
-  interface Async<C> extends Observable<C> {
+  interface Readable<S> {
+    observe: () => Observable<core.DeepReadonly<S>>;
   }
   interface Derivation<R> {
-    observe: () => Observable<R>;
+    observe: () => Observable<core.DeepReadonly<R>>;
+  }
+  interface Future<C> {
+    asObservableFuture: () => Observable<core.FutureState<core.DeepReadonly<C>>>;
+    asObservable: () => Observable<core.DeepReadonly<C>>;
+  }
+  interface Async<C> extends Observable<C> {
   }
 }
 
@@ -92,46 +72,41 @@ export const combineComponentObservables = <T>(component: T): Observable<Observa
   return res as Observable<Observables<T>> & { value: Observables<T> };
 };
 
-let coreHasBeenAgmented = false;
-const augementCore = () => {
-  if (coreHasBeenAgmented) { return; }
-  coreHasBeenAgmented = true;
-  core.augment({
-    selection: {
-      observe: <C>(selection: core.StoreOrDerivation<C>) => () => new Observable<any>(observer => {
-        observer.next(selection.read());
-        const subscription = selection.onChange(v => observer.next(v));
-        return () => { subscription.unsubscribe(); observer.complete(); }
-      }),
-    },
-    future: {
-      asObservableFuture: (input) => () => new Observable<any>(observer => {
+core.augment({
+  selection: {
+    observe: <C>(selection: core.Readable<C>) => () => new Observable<any>(observer => {
+      observer.next(selection.state);
+      const subscription = selection.onChange(v => observer.next(v));
+      return () => { subscription.unsubscribe(); observer.complete(); }
+    }),
+  },
+  future: {
+    asObservableFuture: (input) => () => new Observable<any>(observer => {
 
-        // Call promise, and update state because there may have been an optimistic update
-        // const promise = input.asPromise();
-        observer.next(input.getFutureState());
+      // Call promise, and update state because there may have been an optimistic update
+      // const promise = input.asPromise();
+      observer.next(input.getFutureState());
 
-        // Invoke then() on promise
-        let running = true;
-        input
-          .then(() => { if (running) { observer.next(input.getFutureState()); observer.complete(); } })
-          .catch(() => { if (running) { observer.next(input.getFutureState()); observer.complete(); } });
-        return () => { running = false; observer.complete(); }
-      }),
-      asObservable: (input) => () => {
-        return from(Promise.resolve(input));
-      }
-    },
-    derivation: {
-      observe: <R>(selection: core.Derivation<R>) => () => new Observable<any>(observer => {
-        observer.next(selection.read());
-        const subscription = selection.onChange(v => observer.next(v));
-        return () => { subscription.unsubscribe(); observer.complete(); }
-      }),
-    },
-    async: <C>(fnReturningFutureAugmentation: () => any) => {
-      const promiseOrObservable = fnReturningFutureAugmentation();
-      return promiseOrObservable.then ? promiseOrObservable : (promiseOrObservable as Observable<C>).toPromise()
-    },
-  })
-}
+      // Invoke then() on promise
+      let running = true;
+      input
+        .then(() => { if (running) { observer.next(input.getFutureState()); observer.complete(); } })
+        .catch(() => { if (running) { observer.next(input.getFutureState()); observer.complete(); } });
+      return () => { running = false; observer.complete(); }
+    }),
+    asObservable: (input) => () => {
+      return from(Promise.resolve(input));
+    }
+  },
+  derivation: {
+    observe: <R>(selection: core.Derivation<R>) => () => new Observable<any>(observer => {
+      observer.next(selection.state);
+      const subscription = selection.onChange(v => observer.next(v));
+      return () => { subscription.unsubscribe(); observer.complete(); }
+    }),
+  },
+  async: <C>(fnReturningFutureAugmentation: () => any) => {
+    const promiseOrObservable = fnReturningFutureAugmentation();
+    return promiseOrObservable.then ? promiseOrObservable : (promiseOrObservable as Observable<C>).toPromise()
+  },
+})
