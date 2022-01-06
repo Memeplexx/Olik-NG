@@ -5,6 +5,8 @@ import {
   combineComponentObservables,
   createStore,
   derive,
+  enableAsyncActionPayloads,
+  augmentCore,
   nestStoreIfPossible,
 } from '../src/lib/olik-ng.module';
 
@@ -15,6 +17,11 @@ describe('Angular', () => {
     array: [{ id: 1, value: 'one' }, { id: 2, value: 'two' }, { id: 3, value: 'three' }],
     string: 'b',
   };
+
+  beforeAll(() => {
+    enableAsyncActionPayloads();
+    augmentCore();
+  })
 
   it('should create and update a store', () => {
     const select = createStore({ name: '', state: initialState });
