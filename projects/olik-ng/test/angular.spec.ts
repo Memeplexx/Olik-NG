@@ -137,13 +137,17 @@ describe('Angular', () => {
 
   it('should observe a nested store update', done => {
     const select = createStore({ name: 'x', state: initialState });
-    const nested = createStore({  state: { hello: 'abc' }, name: 'component' });
-    nestStoreIfPossible({ store: nested, instanceName: 'instance', containerStoreName: 'x' })
+    const nested = createStore({ state: { hello: 'abc' }, name: 'component' });
+    const replacement = 'xxx';
     nested.hello
       .observe()
       .subscribe(e => {
-        done();
+        if (e === replacement) {
+          done();
+        }
       });
+    nestStoreIfPossible({ store: nested, instanceName: 'instance', containerName: 'x' })
+    nested.hello.replace(replacement);
   })
 
   it('should combineObservers', done => {
