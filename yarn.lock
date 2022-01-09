@@ -6755,10 +6755,10 @@ obuf@^1.0.0, obuf@^1.1.2:
   resolved "https://registry.yarnpkg.com/obuf/-/obuf-1.1.2.tgz#09bea3343d41859ebd446292d11c9d4db619084e"
   integrity sha512-PX1wu0AmAdPqOL1mWhqmlOd8kOIZQwGZw6rh7uby9fTc5lhaOWFLX3I6R1hrF9k3zUY40e6igsLGkDXK92LJNg==
 
-olik@^0.1.28:
-  version "0.1.28"
-  resolved "https://registry.yarnpkg.com/olik/-/olik-0.1.28.tgz#73d6a6fb87a5aa6f68307b6fe291e7cdaab4747d"
-  integrity sha512-MfpeL34NWpDJf+AWeSkXYUlKqAlFicblwFYclDUOwRDVri7LKbs506hIv3DltcrLcC2lI/zTmmdq2SYzdPUjjQ==
+olik@^0.1.36:
+  version "0.1.36"
+  resolved "https://registry.yarnpkg.com/olik/-/olik-0.1.36.tgz#2d09eb7be81588039ee9e544faa4bf40a7a49600"
+  integrity sha512-wFFaOenA1Q9lg0ifEuTbkXWP903HoTepXNr8jsNpsmjRElF4zJgKjMOchiaTZFqvBgxwklz2E3QmIHZ9/kxIIA==
 
 on-finished@~2.3.0:
   version "2.3.0"

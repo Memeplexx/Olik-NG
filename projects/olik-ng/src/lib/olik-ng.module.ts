@@ -1,13 +1,7 @@
-import { EventEmitter, NgZone } from '@angular/core';
-import { augment, DeepReadonly, Derivation, FutureState, listenToDevtoolsDispatch, Readable } from 'olik';
-import { combineLatest, from, Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
-
-export * from 'olik';
-
-export const syncNgZoneWithDevtools = (ngZone: NgZone) => listenToDevtoolsDispatch(() => ngZone.run(() => null));
+import { ApplicationRef, ChangeDetectorRef, EventEmitter, NgModule } from '@angular/core';
+import { augment, DeepReadonly, Derivation, FutureState, listenToDevtoolsDispatch, Readable } from 'olik';
+import { from, Observable } from 'rxjs';
 
 declare module 'olik' {
   interface Readable<S> {
@@ -31,55 +25,27 @@ type ClassObservables<T> = {
 type SubType<Base, Condition> = Pick<Base, {
   [Key in keyof Base]: Base[Key] extends Condition ? Key : never
 }[keyof Base]>;
-type Observables<T> = ClassObservables<SubType<Omit<T, 'observables$'>, Observable<any>>>;
+type Observables<T> = ClassObservables<SubType<Omit<T, 'state'>, Observable<any>>>;
 
-/**
- * Takes a component instance, finds all its observables, and combines them into 1 observable for the template to consume.
- * This has the added benefit of allowing you to access all observable values synchronously as well as view your observable
- * values inside the Angular devtool extension.
- *
- * @example
- * ```
- * <ng-container *ngIf="observables$ | async; let observe;">
- *   <div>Observable 1: {{observe.observable1$}}</div>
- *   <div>Observable 2: {{observe.observable2$}}</div>
- * </ng-container>
- *
- * class MyComponent {
- *   readonly observable1$ = ...;
- *   readonly observable2$ = ...;
- *   readonly observables$ = combineComponentObservables<MyComponent>(this);
- *
- *   ngAfterViewInit() {
- *     // synchronous access to observable values
- *     const observable1Value = this.$observables.value.observable1$;
- *   }
- * }
- * ```
- */
-export const combineComponentObservables = <T>(component: T): Observable<Observables<T>> & { value: Observables<T> } => {
-  const keysOfObservableMembers = Object.keys(component)
-    .filter(key => (component as any)[key] instanceof Observable && !((component as any)[key] instanceof EventEmitter));
-  const res = combineLatest(
-    keysOfObservableMembers.map(key => (component as any)[key] as Observable<any>)
-  ).pipe(
-    map(observers => {
-      const result = {} as { [key: string]: any };
-      observers.forEach((obs, idx) => result[keysOfObservableMembers[idx]] = obs);
-      (component as any).$observables = result;
-      (res as any).value = result;
-      return result as Observables<T>;
-    })
-  );
-  return res as Observable<Observables<T>> & { value: Observables<T> };
-};
+export const synchronizeObservables = <C>(component: C, changeDetector: ChangeDetectorRef) => {
+  let initialized = false;
+  setTimeout(() => initialized = true)
+  const result = {};
+  const subscriptions = (Object.keys(component) as Array<keyof C>)
+    .filter(key => (component as any)[key] instanceof Observable && !((component as any)[key] instanceof EventEmitter))
+    .map(key => (component[key] as any as Observable<any>).subscribe(r => {
+      Object.assign(result, { [key]: r });
+      if (initialized) { changeDetector.detectChanges(); }
+    }));
+  return Object.assign(result as DeepReadonly<Observables<C>>, { unsubscribe: () => subscriptions.forEach(s => s.unsubscribe()) });
+}
 
 @NgModule({
   imports: [CommonModule],
 })
 export class OlikNgModule {
-  constructor(ngZone: NgZone) {
-    listenToDevtoolsDispatch(() => ngZone.run(() => null));
+  constructor(appRef: ApplicationRef) {
+    listenToDevtoolsDispatch(() => appRef.tick());
     augmentCore();
   }
 }

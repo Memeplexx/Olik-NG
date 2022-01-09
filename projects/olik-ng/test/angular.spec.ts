@@ -1,13 +1,10 @@
+import { createStore, derive, enableAsyncActionPayloads, enableNesting } from 'olik';
 import { BehaviorSubject, from, of } from 'rxjs';
 import { catchError, concatMap, skip, tap } from 'rxjs/operators';
 
 import {
-  combineComponentObservables,
-  createStore,
-  derive,
-  enableAsyncActionPayloads,
   augmentCore,
-  nestStoreIfPossible,
+  synchronizeObservables,
 } from '../src/lib/olik-ng.module';
 
 describe('Angular', () => {
@@ -20,6 +17,7 @@ describe('Angular', () => {
 
   beforeAll(() => {
     enableAsyncActionPayloads();
+    enableNesting();
     augmentCore();
   })
 
@@ -137,7 +135,7 @@ describe('Angular', () => {
 
   it('should observe a nested store update', done => {
     const select = createStore({ name: 'x', state: initialState });
-    const nested = createStore({ state: { hello: 'abc' }, name: 'component' });
+    const nested = createStore({ state: { hello: 'abc' }, name: 'component', tryToNestWithinStore: 'x' });
     const replacement = 'xxx';
     nested.hello
       .observe()
@@ -146,35 +144,7 @@ describe('Angular', () => {
           done();
         }
       });
-    nestStoreIfPossible({ store: nested, instanceName: 'instance', containerName: 'x' })
     nested.hello.replace(replacement);
-  })
-
-  it('should combineObservers', done => {
-    const select = createStore({ name: '', state: initialState });
-    let count = 0;
-    class MyClass {
-      obs1$ = select.object.property.observe();
-      obs2$ = select.string.observe();
-      observables$ = combineComponentObservables<MyClass>(this);
-      constructor() {
-        this.observables$.subscribe(e => {
-          count++;
-          if (count === 1) {
-            const expectation = { obs1$: 'a', obs2$: 'b' };
-            expect(e).toEqual(expectation);
-            expect(this.observables$.value).toEqual(expectation);
-          } else if (count === 2) {
-            const expectation = { obs1$: 'b', obs2$: 'b' };
-            expect(e).toEqual(expectation);
-            expect(this.observables$.value).toEqual(expectation);
-            done();
-          }
-        });
-        select.object.property.replace('b');
-      }
-    };
-    new MyClass();
   })
 
   it('should be able to paginate', done => {
