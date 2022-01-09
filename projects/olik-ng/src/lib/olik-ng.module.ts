@@ -27,6 +27,32 @@ type SubType<Base, Condition> = Pick<Base, {
 }[keyof Base]>;
 type Observables<T> = ClassObservables<SubType<Omit<T, 'state'>, Observable<any>>>;
 
+/**
+ * This is a convenience function that does does 2 things:
+ * 1. It eliminates the need for async pipes in your component templates
+ * 2. It allows synchronous access to the state of your component observables
+ * 
+ * For example:
+ * 
+ * Template:
+ * ```html
+ * <div>Observable 1: {{state.observable1$}}</div>
+ * <div>Observable 2: {{state.observable2$}}</div>
+ * ```
+ * Typescript:
+ * ```ts
+ * export class MyComponent implements OnDestroy {
+ * 
+ *   observable1$ = ...;
+ *   observable2$ = ...;
+ *   state = synchronizeObservables<MyComponent>(this, changeDetector);
+ * 
+ *   constructor(private changeDetector: ChangeDetectorRef){}
+ * 
+ *   ngOnDestroy() { this.state.unsubscribe(); }
+ * }
+ * ```
+ */
 export const synchronizeObservables = <C>(component: C, changeDetector: ChangeDetectorRef) => {
   let initialized = false;
   setTimeout(() => initialized = true)
