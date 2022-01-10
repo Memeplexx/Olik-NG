@@ -4,7 +4,7 @@ import { catchError, concatMap, skip, tap } from 'rxjs/operators';
 
 import {
   augmentCore,
-  synchronizeObservables,
+  combineComponentObservables,
 } from '../src/lib/olik-ng.module';
 
 describe('Angular', () => {
@@ -145,6 +145,33 @@ describe('Angular', () => {
         }
       });
     nested.hello.replace(replacement);
+  })
+
+  it('should combineComponentObservables', done => {
+    const select = createStore({ name: '', state: initialState });
+    let count = 0;
+    class MyClass {
+      obs1$ = select.object.property.observe();
+      obs2$ = select.string.observe();
+      obs$ = combineComponentObservables<MyClass>(this);
+      constructor() {
+        this.obs$.subscribe(e => {
+          count++;
+          if (count === 2) {
+            const expectation = { obs1$: 'a', obs2$: 'b' };
+            expect(e).toEqual(expectation);
+            expect(this.obs$.value).toEqual(expectation);
+          } else if (count === 3) {
+            const expectation = { obs1$: 'b', obs2$: 'b' };
+            expect(e).toEqual(expectation);
+            expect(this.obs$.value).toEqual(expectation);
+            done();
+          }
+        });
+        select.object.property.replace('b');
+      }
+    };
+    new MyClass();
   })
 
   it('should be able to paginate', done => {

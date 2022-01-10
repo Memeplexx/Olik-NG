@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { ApplicationRef, ChangeDetectorRef, EventEmitter, NgModule } from '@angular/core';
+import { ApplicationRef, EventEmitter, NgModule } from '@angular/core';
 import { augment, DeepReadonly, Derivation, FutureState, listenToDevtoolsDispatch, Readable } from 'olik';
-import { from, Observable } from 'rxjs';
+import { combineLatest, from, Observable } from 'rxjs';
+import { map, startWith } from 'rxjs/operators';
 
 declare module 'olik' {
   interface Readable<S> {
@@ -25,46 +26,47 @@ type ClassObservables<T> = {
 type SubType<Base, Condition> = Pick<Base, {
   [Key in keyof Base]: Base[Key] extends Condition ? Key : never
 }[keyof Base]>;
-type Observables<T> = ClassObservables<SubType<Omit<T, 'state'>, Observable<any>>>;
+type Observables<T> = ClassObservables<SubType<Omit<T, 'obs$'>, Observable<any>>>;
 
 /**
- * This is a convenience function that does does 2 things:
- * 1. It eliminates the need for async pipes in your component templates
- * 2. It allows synchronous access to the state of your component observables
- * 
- * For example:
- * 
- * Template:
- * ```html
- * <div>Observable 1: {{state.observable1$}}</div>
- * <div>Observable 2: {{state.observable2$}}</div>
+ * Takes a component instance, finds all its observables, and combines them into 1 observable for the template to consume.
+ * This has the added benefit of allowing you to access all observable values synchronously as well as view your observable
+ * values inside the Angular devtool extension.
+ *
+ * @example
  * ```
- * Typescript:
- * ```ts
- * export class MyComponent implements OnDestroy {
- * 
- *   observable1$ = ...;
- *   observable2$ = ...;
- *   state = synchronizeObservables<MyComponent>(this, changeDetector);
- * 
- *   constructor(private changeDetector: ChangeDetectorRef){}
- * 
- *   ngOnDestroy() { this.state.unsubscribe(); }
+ * <ng-container *ngIf="obs$ | async; let obs;">
+ *   <div>Observable 1: {{obs.observable1$}}</div>
+ *   <div>Observable 2: {{obs.observable2$}}</div>
+ * </ng-container>
+ *
+ * class MyComponent {
+ *   readonly observable1$ = ...;
+ *   readonly observable2$ = ...;
+ *   readonly obs$ = combineComponentObservables<MyComponent>(this);
+ *
+ *   ngAfterViewInit() {
+ *     // synchronous access to observable values
+ *     const observable1Value = this.$obs.value.observable1$;
+ *   }
  * }
  * ```
  */
-export const synchronizeObservables = <C>(component: C, changeDetector: ChangeDetectorRef) => {
-  let initialized = false;
-  setTimeout(() => initialized = true)
-  const result = {};
-  const subscriptions = (Object.keys(component) as Array<keyof C>)
-    .filter(key => (component as any)[key] instanceof Observable && !((component as any)[key] instanceof EventEmitter))
-    .map(key => (component[key] as any as Observable<any>).subscribe(r => {
-      Object.assign(result, { [key]: r });
-      if (initialized) { changeDetector.detectChanges(); }
-    }));
-  return Object.assign(result as DeepReadonly<Observables<C>>, { unsubscribe: () => subscriptions.forEach(s => s.unsubscribe()) });
-}
+export const combineComponentObservables = <T>(component: T): Observable<Observables<T>> & { value: Observables<T> } => {
+  const keysOfObservableMembers = Object.keys(component)
+    .filter(key => (component as any)[key] instanceof Observable && !((component as any)[key] instanceof EventEmitter));
+  const res = combineLatest(
+    keysOfObservableMembers.map(key => ((component as any)[key] as Observable<any>).pipe(startWith(undefined)))
+  ).pipe(
+    map(observers => {
+      const result = {} as { [key: string]: any };
+      observers.forEach((obs, idx) => result[keysOfObservableMembers[idx]] = obs);
+      (res as any).value = result;
+      return result as Observables<T>;
+    })
+  );
+  return res as Observable<Observables<T>> & { value: Observables<T> };
+};
 
 @NgModule({
   imports: [CommonModule],
