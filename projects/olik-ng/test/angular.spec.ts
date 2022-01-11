@@ -1,4 +1,4 @@
-import { createStore, derive, enableAsyncActionPayloads, enableNesting } from 'olik';
+import { createStore, derive, importOlikAsyncModule, importOlikNestingModule } from 'olik';
 import { BehaviorSubject, from, of } from 'rxjs';
 import { catchError, concatMap, skip, tap } from 'rxjs/operators';
 
@@ -16,8 +16,8 @@ describe('Angular', () => {
   };
 
   beforeAll(() => {
-    enableAsyncActionPayloads();
-    enableNesting();
+    importOlikAsyncModule();
+    importOlikNestingModule();
     augmentCore();
   })
 
@@ -135,7 +135,7 @@ describe('Angular', () => {
 
   it('should observe a nested store update', done => {
     const select = createStore({ name: 'x', state: initialState });
-    const nested = createStore({ state: { hello: 'abc' }, name: 'component', tryToNestWithinStore: 'x' });
+    const nested = createStore({ state: { hello: 'abc' }, name: 'component', nestStore: { hostStoreName: 'x', instanceId: 1 } });
     const replacement = 'xxx';
     nested.hello
       .observe()
@@ -160,11 +160,13 @@ describe('Angular', () => {
           if (count === 2) {
             const expectation = { obs1$: 'a', obs2$: 'b' };
             expect(e).toEqual(expectation);
-            expect(this.obs$.value).toEqual(expectation);
+            expect(this.obs$.obs1$).toEqual(expectation.obs1$);
+            expect(this.obs$.obs2$).toEqual(expectation.obs2$);
           } else if (count === 3) {
             const expectation = { obs1$: 'b', obs2$: 'b' };
             expect(e).toEqual(expectation);
-            expect(this.obs$.value).toEqual(expectation);
+            expect(this.obs$.obs1$).toEqual(expectation.obs1$);
+            expect(this.obs$.obs2$).toEqual(expectation.obs2$);
             done();
           }
         });

@@ -47,12 +47,12 @@ type Observables<T> = ClassObservables<SubType<Omit<T, 'obs$'>, Observable<any>>
  *
  *   ngAfterViewInit() {
  *     // synchronous access to observable values
- *     const observable1Value = this.$obs.value.observable1$;
+ *     const observable1Value = this.$obs.observable1$;
  *   }
  * }
  * ```
  */
-export const combineComponentObservables = <T>(component: T): Observable<Observables<T>> & { value: Observables<T> } => {
+export const combineComponentObservables = <T>(component: T) => {
   const keysOfObservableMembers = Object.keys(component)
     .filter(key => (component as any)[key] instanceof Observable && !((component as any)[key] instanceof EventEmitter));
   const res = combineLatest(
@@ -61,11 +61,11 @@ export const combineComponentObservables = <T>(component: T): Observable<Observa
     map(observers => {
       const result = {} as { [key: string]: any };
       observers.forEach((obs, idx) => result[keysOfObservableMembers[idx]] = obs);
-      (res as any).value = result;
+      Object.assign(res, result);
       return result as Observables<T>;
     })
   );
-  return res as Observable<Observables<T>> & { value: Observables<T> };
+  return res as Observable<Observables<T>> & DeepReadonly<Observables<T>>;
 };
 
 @NgModule({
