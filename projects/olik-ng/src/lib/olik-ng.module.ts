@@ -89,16 +89,11 @@ export const augmentCore = () => {
     },
     future: {
       asObservableFuture: (input) => () => new Observable<any>(observer => {
-  
-        // Call promise, and update state because there may have been an optimistic update
-        // const promise = input.asPromise();
-        observer.next(input.getFutureState());
-  
-        // Invoke then() on promise
         let running = true;
         input
-          .then(() => { if (running) { observer.next(input.getFutureState()); observer.complete(); } })
-          .catch(() => { if (running) { observer.next(input.getFutureState()); observer.complete(); } });
+          .then(() => { if (running) { observer.next(input.state); observer.complete(); } })
+          .catch(() => { if (running) { observer.next(input.state); observer.complete(); } });
+        observer.next(input.state);
         return () => { running = false; observer.complete(); }
       }),
       asObservable: (input) => () => {
