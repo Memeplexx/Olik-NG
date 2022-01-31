@@ -6,14 +6,14 @@ import { map, startWith } from 'rxjs/operators';
 
 declare module 'olik' {
   interface Readable<S> {
-    observe: () => Observable<DeepReadonly<S>>;
+    $observe: () => Observable<DeepReadonly<S>>;
   }
   interface Derivation<R> {
-    observe: () => Observable<DeepReadonly<R>>;
+    $observe: () => Observable<DeepReadonly<R>>;
   }
   interface Future<C> {
-    asObservableFuture: () => Observable<FutureState<DeepReadonly<C>>>;
-    asObservable: () => Observable<DeepReadonly<C>>;
+    $asObservableFuture: () => Observable<FutureState<DeepReadonly<C>>>;
+    $asObservable: () => Observable<DeepReadonly<C>>;
   }
   interface Async<C> extends Observable<C> {
   }
@@ -81,14 +81,14 @@ export class OlikNgModule {
 export const augmentCore = () => {
   augment({
     selection: {
-      observe: <C>(selection: Readable<C>) => () => new Observable<any>(observer => {
-        observer.next(selection.state);
-        const subscription = selection.onChange(v => observer.next(v));
+      $observe: <C>(selection: Readable<C>) => () => new Observable<any>(observer => {
+        observer.next(selection.$state);
+        const subscription = selection.$onChange(v => observer.next(v));
         return () => { subscription.unsubscribe(); observer.complete(); }
       }),
     },
     future: {
-      asObservableFuture: (input) => () => new Observable<any>(observer => {
+      $asObservableFuture: (input) => () => new Observable<any>(observer => {
         let running = true;
         input
           .then(() => { if (running) { observer.next(input.state); observer.complete(); } })
@@ -96,14 +96,14 @@ export const augmentCore = () => {
         observer.next(input.state);
         return () => { running = false; observer.complete(); }
       }),
-      asObservable: (input) => () => {
+      $asObservable: (input) => () => {
         return from(Promise.resolve(input));
       }
     },
     derivation: {
-      observe: <R>(selection: Derivation<R>) => () => new Observable<any>(observer => {
-        observer.next(selection.state);
-        const subscription = selection.onChange(v => observer.next(v));
+      $observe: <R>(selection: Derivation<R>) => () => new Observable<any>(observer => {
+        observer.next(selection.$state);
+        const subscription = selection.$onChange(v => observer.next(v));
         return () => { subscription.unsubscribe(); observer.complete(); }
       }),
     },

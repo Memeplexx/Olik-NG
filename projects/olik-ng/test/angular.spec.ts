@@ -24,13 +24,13 @@ describe('Angular', () => {
   it('should create and update a store', () => {
     const select = createStore({ name: '', state: initialState });
     select.object.property
-      .replace('test');
-    expect(select.state.object.property).toEqual('test');
+      .$replace('test');
+    expect(select.$state.object.property).toEqual('test');
   })
 
   it('should be able to observe state updates', done => {
     const select = createStore({ name: '', state: initialState });
-    const obs$ = select.object.property.observe();
+    const obs$ = select.object.property.$observe();
     const payload = 'test';
     obs$.pipe(
       skip(1)
@@ -38,7 +38,7 @@ describe('Angular', () => {
       expect(val).toEqual(payload);
       done();
     });
-    select.object.property.replace(payload);
+    select.object.property.$replace(payload);
   })
 
   it('should be able to observe the status of a resolved fetch', done => {
@@ -46,8 +46,8 @@ describe('Angular', () => {
     let count = 0;
     const fetchProperty = () => from(new Promise<string>(resolve => setTimeout(() => resolve('val ' + count), 10)));
     select.object.property
-      .replace(fetchProperty)
-      .asObservableFuture()
+      .$replace(fetchProperty)
+      .$asObservableFuture()
       .subscribe(val => {
         count++;
         if (count === 1) {
@@ -72,8 +72,8 @@ describe('Angular', () => {
     let count = 0;
     const fetchAndReject = () => new Promise<string>((resolve, reject) => setTimeout(() => reject('test'), 10));
     select.object.property
-      .replace(fetchAndReject)
-      .asObservableFuture()
+      .$replace(fetchAndReject)
+      .$asObservableFuture()
       .subscribe(val => {
         count++;
         if (count === 1) {
@@ -97,8 +97,8 @@ describe('Angular', () => {
     const payload = 'val';
     const fetchProperty = () => from(new Promise<string>(resolve => setTimeout(() => resolve(payload), 10)));
     select.object.property
-      .replace(fetchProperty)
-      .asObservable()
+      .$replace(fetchProperty)
+      .$asObservable()
       .subscribe(val => {
         expect(val).toEqual(payload)
         done();
@@ -110,8 +110,8 @@ describe('Angular', () => {
     const payload = 'val';
     const fetchProperty = () => from(new Promise<string>((resolve, reject) => setTimeout(() => reject(payload), 10)));
     select.object.property
-      .replace(fetchProperty)
-      .asObservable().pipe(
+      .$replace(fetchProperty)
+      .$asObservable().pipe(
         catchError(e => of('error: ' + e))
       )
       .subscribe(val => {
@@ -125,8 +125,8 @@ describe('Angular', () => {
     derive(
       select.object.property,
       select.string,
-    ).with((a, b) => a + b)
-      .observe()
+    ).$with((a, b) => a + b)
+      .$observe()
       .subscribe(val => {
         expect(val).toEqual('ab');
         done();
@@ -138,21 +138,21 @@ describe('Angular', () => {
     const nested = createStore({ state: { hello: 'abc' }, name: 'component', nestStore: { hostStoreName: 'x', instanceId: 1 } });
     const replacement = 'xxx';
     nested.hello
-      .observe()
+      .$observe()
       .subscribe(e => {
         if (e === replacement) {
           done();
         }
       });
-    nested.hello.replace(replacement);
+    nested.hello.$replace(replacement);
   })
 
   it('should combineComponentObservables', done => {
     const select = createStore({ name: '', state: initialState });
     let count = 0;
     class MyClass {
-      obs1$ = select.object.property.observe();
-      obs2$ = select.string.observe();
+      obs1$ = select.object.property.$observe();
+      obs2$ = select.string.$observe();
       obs$ = combineComponentObservables<MyClass>(this);
       constructor() {
         this.obs$.subscribe(e => {
@@ -170,7 +170,7 @@ describe('Angular', () => {
             done();
           }
         });
-        select.object.property.replace('b');
+        select.object.property.$replace('b');
       }
     };
     new MyClass();
@@ -183,11 +183,11 @@ describe('Angular', () => {
     const items = Array(100).fill(null).map((e, i) => ({ id: i, value: `value ${i}` }));
     const fetchItems = (page: number) => () => new Promise<{ id: number, value: string }[]>(
       resolve => setTimeout(() => resolve(items.slice(page * 10, (page * 10) + 10)), 500));
-    select.array.removeAll();
+    select.array.$clear();
     const sub = page$.pipe(
       concatMap(page => select.array
-        .replaceAll(fetchItems(page))
-        .asObservableFuture()),
+        .$replace(fetchItems(page))
+        .$asObservableFuture()),
       tap(r => {
         if (r.wasResolved) {
           expect(r.storeValue).toEqual(items.slice(page$.value * 10, (page$.value * 10) + 10))

@@ -1,10 +1,10 @@
 {
   "name": "olik-ng",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "peerDependencies": {
     "@angular/common": ">=9.0.0",
     "@angular/core": ">=9.0.0",
-    "olik": "^0.1.41",
+    "olik": "^0.1.44",
     "rxjs": ">=6.6.0"
   },
   "dependencies": {

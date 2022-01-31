@@ -41,7 +41,7 @@
     "karma-jasmine": "~4.0.0",
     "karma-jasmine-html-reporter": "^1.5.0",
     "ng-packagr": "^12.0.0",
-    "olik": "^0.1.41",
+    "olik": "^0.1.44",
     "ts-jest": "^26.1.4",
     "typescript": "~4.2.3"
   },
