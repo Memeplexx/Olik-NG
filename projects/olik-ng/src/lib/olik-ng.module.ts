@@ -15,8 +15,8 @@ declare module 'olik' {
     $asObservableFuture: () => Observable<FutureState<DeepReadonly<C>>>;
     $asObservable: () => Observable<DeepReadonly<C>>;
   }
-  interface Async<C> extends Observable<C> {
-  }
+  // interface Async<C> extends Observable<C> {
+  // }
 }
 
 type FunctionParameter<T> = T extends (arg: infer H) => any ? H : never;
