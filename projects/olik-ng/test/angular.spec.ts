@@ -1,4 +1,4 @@
-import { createStore, derive, importOlikAsyncModule, importOlikNestingModule } from 'olik';
+import { createStore, defineQuery, derive, importOlikAsyncModule, importOlikNestingModule } from 'olik';
 import { BehaviorSubject, from, of } from 'rxjs';
 import { catchError, concatMap, skip, tap } from 'rxjs/operators';
 
@@ -205,6 +205,18 @@ describe('Angular', () => {
     ).subscribe();
   })
 
+  it('should define queries correctly', done => {
+    const select = createStore({ name: '', state: initialState });
+    const query = defineQuery({
+      query: () => of('xxx'),
+      cache: 1000,
+    });
+    select.object.property.$replace(...query);
+    setTimeout(() => {
+      expect(select.$state.object.property).toEqual('xxx');
+      done();
+    })
+  })
 
   // // reactive version
   // const paginatedData$ = this.pageIndex$.pipe(
@@ -217,3 +229,5 @@ describe('Angular', () => {
   //   .subscribe(data => setData(data));
 
 });
+
+
