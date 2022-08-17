@@ -22,15 +22,15 @@ describe('Angular', () => {
   })
 
   it('should create and update a store', () => {
-    const select = createStore({ name: '', state: initialState });
-    select.object.property
+    const store = createStore({ name: '', state: initialState });
+    store.object.property
       .$replace('test');
-    expect(select.$state.object.property).toEqual('test');
+    expect(store.$state.object.property).toEqual('test');
   })
 
   it('should be able to observe state updates', done => {
-    const select = createStore({ name: '', state: initialState });
-    const obs$ = select.object.property.$observe();
+    const store = createStore({ name: '', state: initialState });
+    const obs$ = store.object.property.$observe();
     const payload = 'test';
     obs$.pipe(
       skip(1)
@@ -38,14 +38,14 @@ describe('Angular', () => {
       expect(val).toEqual(payload);
       done();
     });
-    select.object.property.$replace(payload);
+    store.object.property.$replace(payload);
   })
 
   it('should be able to observe the status of a resolved fetch', done => {
-    const select = createStore({ name: '', state: initialState });
+    const store = createStore({ name: '', state: initialState });
     let count = 0;
     const fetchProperty = () => from(new Promise<string>(resolve => setTimeout(() => resolve('val ' + count), 10)));
-    select.object.property
+    store.object.property
       .$replace(fetchProperty)
       .$asObservableFuture()
       .subscribe(val => {
@@ -68,10 +68,10 @@ describe('Angular', () => {
   })
 
   it('should be able to observe the status of a rejected fetch', done => {
-    const select = createStore({ name: '', state: initialState });
+    const store = createStore({ name: '', state: initialState });
     let count = 0;
     const fetchAndReject = () => new Promise<string>((resolve, reject) => setTimeout(() => reject('test'), 10));
-    select.object.property
+    store.object.property
       .$replace(fetchAndReject)
       .$asObservableFuture()
       .subscribe(val => {
@@ -93,10 +93,10 @@ describe('Angular', () => {
   })
 
   it('should be able to observe a resolved fetch', done => {
-    const select = createStore({ name: '', state: initialState });
+    const store = createStore({ name: '', state: initialState });
     const payload = 'val';
     const fetchProperty = () => from(new Promise<string>(resolve => setTimeout(() => resolve(payload), 10)));
-    select.object.property
+    store.object.property
       .$replace(fetchProperty)
       .$asObservable()
       .subscribe(val => {
@@ -106,10 +106,10 @@ describe('Angular', () => {
   })
 
   it('should be able to observe a rejected fetch', done => {
-    const select = createStore({ name: '', state: initialState });
+    const store = createStore({ name: '', state: initialState });
     const payload = 'val';
     const fetchProperty = () => from(new Promise<string>((resolve, reject) => setTimeout(() => reject(payload), 10)));
-    select.object.property
+    store.object.property
       .$replace(fetchProperty)
       .$asObservable().pipe(
         catchError(e => of('error: ' + e))
@@ -121,10 +121,10 @@ describe('Angular', () => {
   })
 
   it('should observe a derivation', done => {
-    const select = createStore({ name: '', state: initialState });
+    const store = createStore({ name: '', state: initialState });
     derive(
-      select.object.property,
-      select.string,
+      store.object.property,
+      store.string,
     ).$with((a, b) => a + b)
       .$observe()
       .subscribe(val => {
@@ -134,7 +134,7 @@ describe('Angular', () => {
   })
 
   it('should observe a nested store update', done => {
-    const select = createStore({ name: 'x', state: initialState });
+    const store = createStore({ name: 'x', state: initialState });
     const nested = createStore({ state: { hello: 'abc' }, name: 'component', nestStore: { hostStoreName: 'x', instanceId: 1 } });
     const replacement = 'xxx';
     nested.hello
@@ -148,11 +148,11 @@ describe('Angular', () => {
   })
 
   it('should combineComponentObservables', done => {
-    const select = createStore({ name: '', state: initialState });
+    const store = createStore({ name: '', state: initialState });
     let count = 0;
     class MyClass {
-      obs1$ = select.object.property.$observe();
-      obs2$ = select.string.$observe();
+      obs1$ = store.object.property.$observe();
+      obs2$ = store.string.$observe();
       obs$ = combineComponentObservables<MyClass>(this);
       constructor() {
         this.obs$.subscribe(e => {
@@ -170,22 +170,22 @@ describe('Angular', () => {
             done();
           }
         });
-        select.object.property.$replace('b');
+        store.object.property.$replace('b');
       }
     };
     new MyClass();
   })
 
   it('should be able to paginate', done => {
-    const select = createStore({ name: '', state: initialState });
+    const store = createStore({ name: '', state: initialState });
     const page$ = new BehaviorSubject(0);
     const idle$ = new BehaviorSubject(false);
     const items = Array(100).fill(null).map((e, i) => ({ id: i, value: `value ${i}` }));
     const fetchItems = (page: number) => () => new Promise<{ id: number, value: string }[]>(
       resolve => setTimeout(() => resolve(items.slice(page * 10, (page * 10) + 10)), 500));
-    select.array.$clear();
+    store.array.$clear();
     const sub = page$.pipe(
-      concatMap(page => select.array
+      concatMap(page => store.array
         .$replace(fetchItems(page))
         .$asObservableFuture()),
       tap(r => {
@@ -206,14 +206,14 @@ describe('Angular', () => {
   })
 
   it('should define queries correctly', done => {
-    const select = createStore({ name: '', state: initialState });
+    const store = createStore({ name: '', state: initialState });
     const query = defineQuery({
       query: () => of('xxx'),
       cache: 1000,
     });
-    select.object.property.$replace(...query);
+    store.object.property.$replace(...query);
     setTimeout(() => {
-      expect(select.$state.object.property).toEqual('xxx');
+      expect(store.$state.object.property).toEqual('xxx');
       done();
     })
   })

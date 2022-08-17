@@ -6,5 +6,5 @@
 ![Package Size](https://badgen.net/bundlephobia/minzip/olik-ng)
 ![Dependency count](https://badgen.net/bundlephobia/dependency-count/olik-ng)
 
-This repository contains Angular bindings for [Olik-NG](https://github.com/Memeplexx/Olik-NG).  
+This repository contains Angular bindings for [Olik](https://github.com/Memeplexx/Olik).  
 Please post all issues there.
